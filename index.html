@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Chat Interface</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #fff5e6;
+        }
+        .chatc {
+            width: 300px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .inpc {
+            display: flex;
+            border-bottom: 1px solid #ccc;
+        }
+        input {
+            flex-grow: 1;
+            padding: 10px;
+            border: none;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px;
+            background-color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .chata {
+            height: 300px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        .msgc {
+            display: flex;
+            border-top: 1px solid #ccc;
+        }
+        #status {
+            text-align: center;
+            padding: 10px;
+            font-style: italic;
+        }
+        #quitb {
+            display: none;
+            width: 100%;
+            padding: 10px;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="chatc">
+        <div class="inpc">
+            <input type="text" id="username" placeholder="Username...">
+            <button onclick="register()">></button>
+        </div>
+        <div id="status"></div>
+        <div id="chata" class="chata">
+            Chat here
+        </div>
+        <div class="msgc">
+            <input type="text" id="message" placeholder="Message..." disabled>
+            <button onclick="sendmsg()" disabled>></button>
+        </div>
+        <button id="quitb" onclick="quitc()">Quit Chat</button>
+    </div>
+
+    <script>
+        let socket;
+        let currentUsername = '';
+
+        function connect() {
+            socket = new WebSocket('https://vivid-scientific-tumbleweed.glitch.me');
+
+            socket.onopen = function(e) {
+                upds("Connected to server.");
+            };
+
+            socket.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                handleMessage(data);
+            };
+
+            socket.onclose = function(event) {
+                if (event.wasClean) {
+                    upds(`Connection closed cleanly, code=${event.code} reason=${event.reason}`);
+                } else {
+                    upds('Connection died');
+                }
+                disbc();
+            };
+
+            socket.onerror = function(error) {
+                upds(`Error: ${error.message}`);
+            };
+        }
+
+        function register() {
+            const usernameInput = document.getElementById('username');
+            currentUsername = usernameInput.value.trim();
+            if (currentUsername) {
+                connect();
+                socket.addEventListener('open', function() {
+                    socket.send(JSON.stringify({type: 'register', username: currentUsername}));
+                });
+                usernameInput.disabled = true;
+            }
+        }
+
+        function handleMessage(data) {
+            switch(data.type) {
+                case 'registration':
+                    if (data.success) {
+                        upds("Registered successfully. Waiting for a chat partner...");
+                    } else {
+                        upds("Registration failed: " + data.message);
+                        document.getElementById('username').disabled = false;
+                    }
+                    break;
+                case 'chat_start':
+                    upds("Connected with: " + data.partner);
+                    enabc();
+                    break;
+                case 'chat_message':
+                    addmsg(data.sender, data.message);
+                    break;
+                case 'partner_disconnected':
+                    upds("Your chat partner disconnected. Waiting for a new partner...");
+                    break;
+            }
+        }
+
+        function sendmsg() {
+            const messageInput = document.getElementById('message');
+            const message = messageInput.value.trim();
+            if (message) {
+                socket.send(JSON.stringify({type: 'chat_message', message: message}));
+                addmsg(currentUsername, message);
+                messageInput.value = '';
+            }
+        }
+
+        function addmsg(sender, message) {
+            const chatArea = document.getElementById('chata');
+            chatArea.innerHTML += `<p><strong>${sender}:</strong> ${message}</p>`;
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function upds(message) {
+            document.getElementById('status').textContent = message;
+        }
+
+        function enabc() {
+            document.getElementById('message').disabled = false;
+            document.querySelector('.msgc button').disabled = false;
+            document.getElementById('quitb').style.display = 'block';
+        }
+
+        function disbc() {
+            document.getElementById('message').disabled = true;
+            document.querySelector('.msgc button').disabled = true;
+            document.getElementById('quitb').style.display = 'none';
+        }
+
+        function quitc() {
+            socket.send(JSON.stringify({type: 'quit'}));
+            upds("Disconnected. Waiting for a new partner...");
+            disbc();
+        }
+    </script>
+</body>
+</html>
