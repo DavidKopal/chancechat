@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebSocket Chat Interface</title>
+    <title>ChanceMeet</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -13,6 +13,10 @@
             height: 100vh;
             margin: 0;
             background-color: #fff5e6;
+        }
+        #title {
+            color: #f0d1a4;
+            text-align: center;
         }
         .chatc {
             width: 300px;
@@ -70,14 +74,13 @@
             <button onclick="register()">></button>
         </div>
         <div id="status"></div>
-        <div id="chata" class="chata">
-            Chat here
-        </div>
+        <div id="chata" class="chata"></div>
         <div class="msgc">
             <input type="text" id="message" placeholder="Message..." disabled>
             <button onclick="sendmsg()" disabled>></button>
         </div>
         <button id="quitb" onclick="quitc()">Quit Chat</button>
+        <h1 id="title">Chance Meet</h1>
     </div>
 
     <script>
